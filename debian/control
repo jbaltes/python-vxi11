@@ -1,0 +1,15 @@
+Source: python-vxi11
+Section: python
+Priority: optional
+Maintainer: Jochen Baltes <jochen.baltes@gmail.com>
+Build-Depends: debhelper-compat (= 12),
+               dh-python,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.5.0
+Homepage: https://github.com/python-ivi/python-vxi11
+
+Package: python3-vxi11
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: VXI-11 driver for controlling instruments over Ethernet (Python 3)

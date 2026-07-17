@@ -1,0 +1,5 @@
+python-vxi11 (0.9-1) unstable; urgency=low
+
+  * Initial release building for both Python 2 and Python 3.
+
+ -- Ihr Name <joche.baltes@gmail.com>  Fri, 17 Jul 2026 12:00:00 +0200

@@ -6,5 +6,11 @@ build
 dist
 *.egg-info
 .pybuild/
+debian/.debhelper/
+debian/files
+debian/python3-vxi11/
+debian/python3-vxi11.debhelper.log
+debian/python3-vxi11.substvars
+debian/debhelper-build-stamp
 
 MANIFEST

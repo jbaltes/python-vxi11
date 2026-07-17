@@ -1,0 +1,6 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=vxi11
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
