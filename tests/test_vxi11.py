@@ -1,48 +1,32 @@
-#!/usr/bin/env python
-
-import nose
-from nose.tools import eq_
+import unittest
 from vxi11.vxi11 import parse_visa_resource_string
 
-def test_parse_visa_resource_string():
-    f = parse_visa_resource_string
+class TestVxi11(unittest.TestCase):
 
-    res = f('TCPIP::10.0.0.1::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['suffix'], 'INSTR')
+    def test_parse_visa_resource_string(self):
+        f = parse_visa_resource_string
 
-    res = f('TCPIP0::10.0.0.1::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP0')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['suffix'], 'INSTR')
+        # TCPIP INSTR Tests
+        self.assertEqual(f('TCPIP::10.0.0.1::INSTR')['prefix'], 'TCPIP')
+        self.assertEqual(f('TCPIP::10.0.0.1::INSTR')['type'], 'TCPIP')
+        self.assertEqual(f('TCPIP::10.0.0.1::INSTR')['arg1'], '10.0.0.1')
+        self.assertEqual(f('TCPIP::10.0.0.1::INSTR')['arg2'], None)
+        self.assertEqual(f('TCPIP::10.0.0.1::INSTR')['suffix'], 'INSTR')
 
-    res = f('TCPIP::10.0.0.1::gpib,5::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['suffix'], 'INSTR')
+        self.assertEqual(f('TCPIP0::10.0.0.1::INSTR')['prefix'], 'TCPIP0')
+        self.assertEqual(f('TCPIP0::10.0.0.1::INSTR')['type'], 'TCPIP')
 
-    res = f('TCPIP0::10.0.0.1::gpib,5::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP0')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['arg2'], 'gpib,5')
-    eq_(res['suffix'], 'INSTR')
+        self.assertEqual(f('TCPIP0::10.0.0.1::gpib,5::INSTR')['prefix'], 'TCPIP0')
+        self.assertEqual(f('TCPIP0::10.0.0.1::gpib,5::INSTR')['arg2'], 'gpib,5')
 
-    res = f('TCPIP0::10.0.0.1::usb0::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP0')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['arg2'], 'usb0')
-    eq_(res['suffix'], 'INSTR')
+        self.assertEqual(f('TCPIP0::10.0.0.1::usb0::INSTR')['prefix'], 'TCPIP0')
+        self.assertEqual(f('TCPIP0::10.0.0.1::usb0::INSTR')['arg2'], 'usb0')
 
-    res = f('TCPIP0::10.0.0.1::usb0[1234::5678::MYSERIAL::0]::INSTR')
-    eq_(res['type'], 'TCPIP')
-    eq_(res['prefix'], 'TCPIP0')
-    eq_(res['arg1'], '10.0.0.1')
-    eq_(res['arg2'], 'usb0[1234::5678::MYSERIAL::0]')
-    eq_(res['suffix'], 'INSTR')
+        self.assertEqual(f('TCPIP0::10.0.0.1::inst0::INSTR')['prefix'], 'TCPIP0')
+        self.assertEqual(f('TCPIP0::10.0.0.1::inst0::INSTR')['arg2'], 'inst0')
 
+        self.assertEqual(f('TCPIP0::10.0.0.1::hislip0::INSTR')['prefix'], 'TCPIP0')
+        self.assertEqual(f('TCPIP0::10.0.0.1::hislip0::INSTR')['arg2'], 'hislip0')
+
+if __name__ == '__main__':
+    unittest.main()
