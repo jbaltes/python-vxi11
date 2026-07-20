@@ -13,7 +13,7 @@ import numpy as np
 # Lazy import handling for optional tm-data-types package dependency
 TM_DATA_TYPES_AVAILABLE = False
 try:
-    from tm_data_types import AnalogWaveform, write_file
+    from tm_data_types import AnalogWaveform, AnalogWaveformMetaInfo, write_file
     TM_DATA_TYPES_AVAILABLE = True
 except ImportError:
     pass
@@ -24,7 +24,8 @@ def identify_scope_family(idn_string):
     idn_upper = idn_string.upper()
     
     if "TEKTRONIX" in idn_upper:
-        if any(x in idn_upper for x in ["TDS5000", "TDS7000", "DPO70000"]):
+        model = idn_upper.split(",")[1] if "," in idn_upper else idn_upper
+        if any(model.startswith(x) for x in ["TDS5", "TDS7", "DPO7"]):
             return "TEK_LEGACY"
         elif any(x in idn_upper for x in ["MSO4", "MSO5", "MSO6"]):
             return "TEK_MODERN"
@@ -115,6 +116,18 @@ def fetch_waveform(ip_address, channel="CH1", save_wfm=False):
         instr.write("WAVEFORM:BYTEORDER LSBFirst")
         instr.write("WAVEFORM:FORMAT WORD")
         numpy_dtype = np.int16
+    elif family in ("TEK_GENERIC", "AGILENT_GENERIC"):
+        print(f"[WARNING] Unrecognized specific model, using generic 8-bit fallback for family {family}.")
+        if "TEK" in family:
+            instr.write(f"DATA:SOURCE {channel}")
+            instr.write("DATA:ENC RI")
+            instr.write("DATA:WIDTH 1")
+        else:
+            agilent_ch = channel.replace("CH", "CHAN")
+            instr.write(f"WAVEFORM:SOURCE {agilent_ch}")
+            instr.write("WAVEFORM:BYTEORDER LSBFirst")
+            instr.write("WAVEFORM:FORMAT BYTE")
+        numpy_dtype = np.int8
 
     # -------------------------------------------------------------------------
     # Data Read Phase (IEEE-488.2 Definite Length Block Transfer)
@@ -143,19 +156,27 @@ def fetch_waveform(ip_address, channel="CH1", save_wfm=False):
         # Storage Selection Phase (.bin vs .wfm via tm-data-types)
         # -------------------------------------------------------------------------
         if save_wfm:
-            # Reconstruct digitized measurements back to physical float voltages
-            # Tektronix formula: Voltage = ((RawValue - YOFF) * YMULT) + YZERO
-            scaled_y = ((waveform_array - y_off) * y_mult) + y_zero
-            
             output_filename = f"waveform_{channel}.wfm"
             print(f"[INFO] Initializing AnalogWaveform object wrapper...")
-            
-            # Pack inside an AnalogWaveform data container object
+
+            # Pack inside an AnalogWaveform data container object.
+            # IMPORTANT: tm_data_types wants the RAW integer samples in
+            # y_axis_values, plus the scale/offset fields separately -
+            # it does the YOFF/YMULT/YZERO math itself when the file is
+            # read back. Do NOT pre-scale to physical volts here, and do
+            # NOT use "y_values" - that attribute doesn't exist on
+            # AnalogWaveform, so it was silently getting thrown away and
+            # write_file() choked on the still-empty real field.
             wfm_object = AnalogWaveform()
-            wfm_object.y_values = scaled_y
+            wfm_object.meta_info = AnalogWaveformMetaInfo()
+            wfm_object.y_axis_values = waveform_array          # raw ADC codes
+            type_info = np.iinfo(numpy_dtype)
+            type_range = int(type_info.max) - int(type_info.min)
+            wfm_object.y_axis_extent_magnitude = y_mult * type_range
+            wfm_object.y_axis_offset = y_zero                  # == YZERO
             wfm_object.x_axis_spacing = x_incr
             wfm_object.source_name = channel
-            
+
             # Serialize the unified object model to disk using the writer utility
             write_file(output_filename, wfm_object)
             print(f"[SUCCESS] Native .wfm file safely generated via tm-data-types: '{output_filename}'")
